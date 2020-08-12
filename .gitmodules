@@ -1,0 +1,3 @@
+[submodule "example/components/display_driver"]
+	path = example/components/display_driver
+	url = https://github.com/albertwdev/display_driver

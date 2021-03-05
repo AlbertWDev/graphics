@@ -24,8 +24,10 @@ jobs:
     steps:
     - name: Update Git
       run: |
-        sudo apt-get update
-        sudo apt-get install -y git=2.30.1
+        apt update
+        apt install -y software-properties-common
+        add-apt-repository -y ppa:git-core/ppa
+        apt install -y git
 
     - name: Checkout repository
       uses: actions/checkout@v2

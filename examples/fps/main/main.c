@@ -1,12 +1,12 @@
 #include <stdio.h>
-#include "freertos/FreeRTOS.h"
-#include "freertos/task.h"
-#include "esp_system.h"
+#include <freertos/FreeRTOS.h>
+#include <freertos/task.h>
+#include <esp_system.h>
 
 #include "graphics.h"
 
-#include "esp_log.h"
-static const char* TAG = "MAIN";
+#include <esp_log.h>
+static const char* TAG = "EXAMPLE-FPS";
 
 
 void draw(const g_region_t* region) {

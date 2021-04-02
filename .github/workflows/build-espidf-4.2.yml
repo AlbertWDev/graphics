@@ -5,6 +5,8 @@ on:
     branches: [ master ]
   pull_request:
     branches: [ master ]
+    paths-ignore:
+      - '**.md'
   workflow_dispatch:
 
 jobs:
@@ -16,10 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [cpp]
-    
-    env:
-      example-path: example
+        example-path: [ examples/fps ]
 
     steps:
     - name: Update Git
@@ -37,13 +36,13 @@ jobs:
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v1
       with:
-        languages: ${{ matrix.language }}
+        languages: cpp
         queries: security-and-quality
     
     - name: Build example
       run: |
         . ${IDF_PATH}/export.sh
-        cd ${{ env.example-path }}
+        cd ${{ matrix.example-path }}
         idf.py build
 
     - name: Perform CodeQL Analysis

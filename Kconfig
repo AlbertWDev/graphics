@@ -1,0 +1,11 @@
+menu "Graphics"
+    config G_VDB_SIZE
+        int "Size of the Virtual Display Buffer"
+        help
+            Size in pixels of the Virtual Display Buffer.
+            A value of 0 will set the size to DISP_WIDTH * DISP_HEIGHT,
+            according to the display_driver configuration.
+            Default is 0.
+        default 0
+
+endmenu

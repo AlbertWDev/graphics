@@ -1,9 +1,15 @@
 #pragma once
 
+#include <sdkconfig.h>
+
 #include "display_driver.h"
 #include "region.h"
 
-#define VDB_SIZE DISP_WIDTH * 160
+#if(CONFIG_G_VDB_SIZE == 0)
+#define VDB_SIZE DISP_WIDTH * DISP_HEIGHT
+#else
+#define VDB_SIZE CONFIG_G_VDB_SIZE
+#endif
 
 
 #define HEX_TO_COLOR(HEX) ((((HEX) & 0xFF) << 8) | (((HEX) >> 8) & 0xFF))

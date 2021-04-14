@@ -143,8 +143,8 @@ def rightmost_bit(byte):
     b = binary(byte)
     len_without_trailing_zeros = len(b.rstrip('0'))
     if len_without_trailing_zeros == 0:
-        return 0
-    return len(b) - len_without_trailing_zeros + 1
+        return 8 * len(byte)
+    return len(b) - len_without_trailing_zeros
 
 def glyph_width(char: int, font: Font):
     width_bytes = math.ceil(font.width / 8)
@@ -152,16 +152,14 @@ def glyph_width(char: int, font: Font):
     glyph_index = (char - font.ascii_offset) * glyph_size
     glyph = list(font.glyphs[glyph_index:glyph_index + glyph_size])
 
-    # TODO: Optimization: apply OR to all glyph_lines and get last 1 of the result
-    min_bits = width_bytes * 8
+    # Apply OR to all glyph_lines
+    glyph_bits = [0 for i in range(width_bytes)]
     for i in range(font.height):
         glyph_line = glyph[i * width_bytes : (i+1) * width_bytes]
-        #print(f"{binary(glyph_line)} -> {rightmost_bit(glyph_line)}")
-
-        right_bit_pos = rightmost_bit(glyph_line)
-        if right_bit_pos != 0 and right_bit_pos < min_bits:
-            min_bits = right_bit_pos
-    return (8 * width_bytes) - min_bits + 1
+        glyph_bits = [glyph_bits[i] | glyph_line[i] for i in range(width_bytes)]
+    
+    # Get last bit of OR result
+    return (8 * width_bytes) - rightmost_bit(glyph_bits)
 
 def draw_string(img, string, font):
     x_offset = 0 if font.monospace else 1
@@ -173,7 +171,6 @@ def draw_string(img, string, font):
 
     for char in string:
         char = ord(char) if isinstance(char, str) else char
-        char_width = font.width if font.monospace else glyph_width(char, font)
 
         if char == ord('\x1B'):
             cx -= last_char_width + x_offset
@@ -189,10 +186,14 @@ def draw_string(img, string, font):
 
         else:
             _cx = cx
+            char_width = font.width if font.monospace else glyph_width(char, font)
+
             if combining_mode and not font.monospace:
-                _cx += int(last_char_width/2)
+                _cx += int((last_char_width - char_width + 1)/2)
             else:
                 last_char_width = char_width
+                if last_char_width == 0:
+                    last_char_width = int(font.width/4)
 
             combining_mode = False
             draw_char(img, _cx, cy, char, font)
@@ -229,7 +230,7 @@ if __name__ == '__main__':
                                 args.font_name,
                                 f"{args.font_name.replace(' ', '_')}_map.json")
     if not os.path.isfile(charmap_file):
-        parser.error(f"Charmap file '{charmapfile}' not found")
+        parser.error(f"Charmap file '{charmap_file}' not found")
 
     font_file = os.path.join(args.font_dir,
                              args.font_name,

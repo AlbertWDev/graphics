@@ -19,6 +19,7 @@ if __name__ == '__main__':
                         action='help')
     parser.add_argument('-w', "--width",
                         help="Width of each glyph in pixels",
+                        metavar="[1-127]",
                         type=int, required=True)
     parser.add_argument('-h', "--height",
                         help="Height of each glyph in pixels",

@@ -1,0 +1,8 @@
+# Font reference & design files
+fonts/*/*.psd
+fonts/*/ref/
+
+# Font output files
+fonts/*/*_map.json
+fonts/*/*.bmf
+fonts/*/*.h

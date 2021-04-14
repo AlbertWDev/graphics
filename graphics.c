@@ -1,6 +1,9 @@
 #include "graphics.h"
 
+#include "fonts/base.h"
+
 static g_disp_t* _g_disp = NULL;
+static const g_font_t* _g_font = &base_font;
 
 #define DEBUG_REGION(text, reg) ESP_LOGI("GRAPHICS", "%s [%d:%d, %d:%d]", text, reg.x0, reg.x1, reg.y0, reg.y1)
 
@@ -285,4 +288,120 @@ void g_draw_polygon(g_point_t* points, g_size_t len, g_color_t color, g_size_t t
         for(g_size_t i = 0, j = len - 1; i < len; j = i++)
             g_draw_line(points[j].x, points[j].y, points[i].x, points[i].y, color, thickness);
     }
+}
+
+esp_err_t g_draw_bitmap_mono(g_coord_t x, g_coord_t y, const uint8_t* bitmap, g_size_t width, g_size_t height, g_color_t color) {
+    g_size_t width_bytes = ceil((double)width / 8);
+
+    for(g_coord_t v = 0; v < height; v++) {
+        for(g_coord_t u = 0; u < width; u++) {
+            // bmp_byte = bitmap[width_bytes * v + (u // 8)]
+            // bit = 0b10000000 >> (u % 8) = 1 << (7 - (u % 8))
+            if(bitmap[width_bytes * v + (u >> 3)] & (1 << (~u & 7)))
+                g_draw_pixel(x + u, y + v, color);
+        }
+    }
+
+    return ESP_OK;
+}
+
+esp_err_t g_draw_char(g_coord_t x, g_coord_t y, char character, g_color_t color) {
+    const uint8_t* glyph = &_g_font->glyphs[(character - _g_font->ascii_offset) * g_font_glyph_size(_g_font)];
+    
+    // TODO: Draw in baseline (substracting descent)
+    return g_draw_bitmap_mono(x, y, glyph, _g_font->width, _g_font->height, color);
+}
+
+inline uint8_t _rightmost_bit(uint8_t byte) {
+    if(!byte) return 8;
+    return __builtin_ctz(byte);
+}
+
+uint8_t _glyph_width_multibytes(char character) {
+    uint8_t width_bytes = ceil((double)_g_font->width / 8);
+    const uint8_t* glyph = &_g_font->glyphs[(character - _g_font->ascii_offset) * g_font_glyph_size(_g_font)];
+    
+    uint8_t glyph_bits[width_bytes];
+    memset(glyph_bits, 0, width_bytes);
+    // Apply OR to all glyph lines, byte by byte
+    for(int b = 0; b < width_bytes * _g_font->height; b++) {
+        glyph_bits[b % width_bytes] |= glyph[b];
+    }
+
+    // Find rightmost '1', right to left
+    uint8_t right_bit_pos;
+    for(int b = width_bytes - 1; b >= 0; b--) {
+        right_bit_pos = _rightmost_bit(glyph_bits[b]);
+
+        if(right_bit_pos < 8)  // '1' found in this byte
+            return (8 * b) + (8 - right_bit_pos);
+    }
+    return 0;
+}
+
+uint8_t _glyph_width(char character) {
+    if(_g_font->width > 8)
+        return _glyph_width_multibytes(character);
+    
+    uint8_t glyph_bits = 0;
+    const uint8_t* glyph = &_g_font->glyphs[(character - _g_font->ascii_offset) * g_font_glyph_size(_g_font)];
+    
+    // Apply OR to all glyph lines
+    for(int y = 0; y < _g_font->height; y++)
+        glyph_bits |= glyph[y];
+
+    return 8 - _rightmost_bit(glyph_bits);
+}
+
+esp_err_t g_draw_string(g_coord_t x, g_coord_t y, const char* string, g_color_t color) {
+    if(!string) return ESP_ERR_INVALID_ARG;
+    
+    uint8_t line_gap = 1;
+    uint8_t char_gap = _g_font->monospace ? 0 : 1;
+    uint8_t empty_gap = _g_font->width / 4;
+
+    uint8_t char_width;
+    uint8_t last_char_width = 0; // Width of last non-special char
+    bool combining_mode = false;
+    g_coord_t _cx, cx = 0, cy = 0; // Relative cursor position
+    char c;
+    for(g_size_t i = 0; (c = string[i]) != 0; i++) {
+        switch(c) {
+            case '\x1B':    // Escape \e
+                cx -= last_char_width + char_gap;
+                combining_mode = true;
+                break;
+            case '\n':      // New line \n
+                last_char_width = 0;
+                cx = 0;
+                cy += _g_font->height + line_gap;
+                break;
+            case ' ':
+                combining_mode = false;
+                last_char_width = empty_gap;
+                cx += last_char_width + char_gap;
+                break;
+            default:
+                if(c < _g_font->ascii_offset) break;
+
+                char_width = _g_font->monospace ? _g_font->width : _glyph_width(c);
+
+                _cx = cx;
+                if(combining_mode && !_g_font->monospace)
+                    _cx += (last_char_width - char_width + 1)/2;
+                else {
+                    last_char_width = char_width;
+                    if(last_char_width == 0)
+                        last_char_width = empty_gap;
+                }
+
+                if(char_width > 0)
+                    g_draw_char(x + _cx, y + cy, c, color);
+                
+                combining_mode = false;
+                cx += last_char_width + char_gap;
+                break;
+        }
+    }
+    return ESP_OK;
 }

@@ -1,9 +1,11 @@
 #pragma once
 
+#include <math.h>
 #include <sdkconfig.h>
 
 #include "display_driver.h"
 #include "region.h"
+#include "font.h"
 
 #if(CONFIG_G_VDB_SIZE == 0)
 #define VDB_SIZE DISP_WIDTH * DISP_HEIGHT
@@ -47,3 +49,7 @@ esp_err_t g_draw_vline(g_coord_t x, g_coord_t y, g_size_t height, g_color_t colo
 esp_err_t g_draw_line(g_coord_t x0, g_coord_t y0, g_coord_t x1, g_coord_t y1, g_color_t color, g_size_t thickness);
 esp_err_t g_draw_circle(g_coord_t x, g_coord_t y, g_size_t r, g_color_t color, g_size_t thickness);
 void g_draw_polygon(g_point_t* points, g_size_t len, g_color_t color, g_size_t thickness);
+
+esp_err_t g_draw_bitmap_mono(g_coord_t x, g_coord_t y, const uint8_t* bitmap, g_size_t width, g_size_t height, g_color_t color);
+esp_err_t g_draw_char(g_coord_t x, g_coord_t y, char character, g_color_t color);
+esp_err_t g_draw_string(g_coord_t x, g_coord_t y, const char* string, g_color_t color);

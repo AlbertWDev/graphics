@@ -8,19 +8,7 @@ import math
 import cv2
 
 
-def parse_font_descriptor(font_descriptor):
-    if os.path.isfile(font_descriptor):
-        font_file = font_descriptor
-        font_dir = os.path.dirname(os.path.realpath(font_file))
-    elif os.path.isdir(font_descriptor):
-        font_file = os.path.join(
-            font_descriptor,
-            f"{os.path.basename(os.path.normpath(font_descriptor))}.json")
-        font_dir = font_descriptor
-    else:
-        print(f"Error: '{font_descriptor}' is not a valid file or directory.")
-        return None
-
+def parse_font_descriptor(font_dir, font_file):
     try:
         with open(font_file, 'r') as file:
             font = json.load(file)
@@ -85,12 +73,23 @@ if __name__ == '__main__':
                              "A directory can also be provided if the JSON filename "
                              "is the same as the folder.")
     parser.add_argument('-o', '--output', dest='output_dir',
-                        help="Output directory where font folder is created. "
-                             "Defaults to current directory.",
-                        type=str, default='.')
+                        help="Output directory where font files are saved. "
+                             "Defaults to same directory as JSON font description.",
+                        type=str, default=None)
     args = parser.parse_args()
 
-    font = parse_font_descriptor(args.font)
+    if os.path.isfile(args.font):
+        font_file = args.font
+        font_dir = os.path.dirname(os.path.realpath(args.font))
+    elif os.path.isdir(args.font):
+        font_file = os.path.join(
+            args.font,
+            f"{os.path.basename(os.path.normpath(args.font))}.json")
+        font_dir = args.font
+    else:
+        parser.error(f"'{args.font}' is not a valid file or directory.")
+
+    font = parse_font_descriptor(font_dir, font_file)
     if font is None:
         exit(1)
 
@@ -99,8 +98,9 @@ if __name__ == '__main__':
         print(f"Error: The bitmap file '{font['glyphs']}' is not supported.")
         exit(1)
 
-    output_dir = os.path.join(args.output_dir, font['name'])
-    os.makedirs(output_dir, exist_ok=True)
+    if args.output_dir is None:
+        args.output_dir = font_dir
+    os.makedirs(args.output_dir, exist_ok=True)
 
     glyph_width = 8 * math.ceil(font['width'] / 8)
     glyph_height = font['height']
@@ -111,7 +111,7 @@ if __name__ == '__main__':
         exit(1)
 
     font_map = {}
-    with open(os.path.join(output_dir, f"{font['name'].replace(' ', '_')}.bmf"), 'wb') as f:
+    with open(os.path.join(args.output_dir, f"{font['name'].replace(' ', '_').lower()}.bmf"), 'wb') as f:
         f.write(bytes([
             font['width'] | (0 if font['monospace'] else 0x80),
             font['height'],
@@ -135,5 +135,5 @@ if __name__ == '__main__':
 
             f.write(bytes(glyph_bytes))
 
-    with open(os.path.join(output_dir, f"{font['name'].replace(' ', '_')}_map.json"), 'w') as f:
+    with open(os.path.join(args.output_dir, f"{font['name'].replace(' ', '_').lower()}_map.json"), 'w') as f:
         json.dump(font_map, f, indent=4)

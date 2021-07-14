@@ -305,6 +305,28 @@ esp_err_t g_draw_bitmap_mono(g_coord_t x, g_coord_t y, const uint8_t* bitmap, g_
     return ESP_OK;
 }
 
+esp_err_t g_draw_bitmap_palette(g_coord_t x, g_coord_t y, const uint8_t* bitmap, g_size_t width, g_size_t height, g_color_t* palette) {
+    for(g_coord_t v = 0; v < height; v++) {
+        for(g_coord_t u = 0; u < width; u++) {
+            g_draw_pixel(x + u, y + v, palette[bitmap[v * width + u]]);
+        }
+    }
+    return ESP_OK;
+}
+
+esp_err_t g_draw_bitmap_palette_transparent(g_coord_t x, g_coord_t y, const uint8_t* bitmap, g_size_t width, g_size_t height, g_color_t* palette, const uint8_t transparent_index) {
+    uint8_t index;
+    for(g_coord_t v = 0; v < height; v++) {
+        for(g_coord_t u = 0; u < width; u++) {
+            index = bitmap[v * width + u];
+            if(index == transparent_index) continue;
+
+            g_draw_pixel(x + u, y + v, palette[index]);
+        }
+    }
+    return ESP_OK;
+}
+
 esp_err_t g_draw_char(g_coord_t x, g_coord_t y, char character, g_color_t color) {
     const uint8_t* glyph = &_g_font->glyphs[(character - _g_font->ascii_offset) * g_font_glyph_size(_g_font)];
     

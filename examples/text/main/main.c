@@ -3,7 +3,7 @@
 #include <freertos/task.h>
 #include <esp_system.h>
 
-#include "graphics.h"
+#include <graphics.h>
 
 #include <esp_log.h>
 static const char* TAG = "EXAMPLE-TEXT";

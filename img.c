@@ -25,7 +25,8 @@ const char* colormode2str(g_img_colormode_t colormode) {
 
 g_img_t* g_img_open(const char* filename) {
     g_img_t* img = malloc(sizeof(g_img_t));
-    if(!img) goto exit_free;
+    if(!img) return NULL;
+    img->bitmap = NULL;
 
     img->fd = open(filename, O_RDONLY, 0);
     if (img->fd == -1) {
@@ -91,6 +92,7 @@ exit_close:
     close(img->fd);
 
 exit_free:
+    free(img->bitmap);
     free(img);
     return NULL;
 }
@@ -98,6 +100,7 @@ exit_free:
 void g_img_close(g_img_t* img) {
     if(img->fd > -1) close(img->fd);
     if(img->header.flags & G_IMG_FLAG_INDEXED) free(img->palette);
+    free(img->bitmap);
     free(img);
 }
 

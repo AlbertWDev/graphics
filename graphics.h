@@ -51,5 +51,8 @@ esp_err_t g_draw_circle(g_coord_t x, g_coord_t y, g_size_t r, g_color_t color, g
 void g_draw_polygon(g_point_t* points, g_size_t len, g_color_t color, g_size_t thickness);
 
 esp_err_t g_draw_bitmap_mono(g_coord_t x, g_coord_t y, const uint8_t* bitmap, g_size_t width, g_size_t height, g_color_t color);
+esp_err_t g_draw_bitmap_palette(g_coord_t x, g_coord_t y, const uint8_t* bitmap, g_size_t width, g_size_t height, g_color_t* palette);
+esp_err_t g_draw_bitmap_palette_transparent(g_coord_t x, g_coord_t y, const uint8_t* bitmap, g_size_t width, g_size_t height, g_color_t* palette, const uint8_t transparent_index);
+
 esp_err_t g_draw_char(g_coord_t x, g_coord_t y, char character, g_color_t color);
 esp_err_t g_draw_string(g_coord_t x, g_coord_t y, const char* string, g_color_t color);
